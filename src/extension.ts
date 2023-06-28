@@ -1,26 +1,50 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import path = require("node:path");
+import fs = require("node:fs");
+import { z } from "zod";
+import { ExtensionContext, commands, workspace, window } from "vscode";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+const terminalConfigSchema = z.object({
+  name: z.string(),
+  command: z.string(),
+});
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "terminals-run" is now active!');
+type TerminalConfig = z.TypeOf<typeof terminalConfigSchema>;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('terminals-run.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from terminals.run!');
-	});
+function runTerminalsCommand(context: ExtensionContext) {
+  return async function () {
+    if (
+      !workspace.workspaceFolders ||
+      workspace.workspaceFolders.length === 0
+    ) {
+      return window.showErrorMessage("No folder opened in workspace!");
+    }
 
-	context.subscriptions.push(disposable);
+    const workspaceFolderPath = workspace.workspaceFolders[0].uri.fsPath;
+    const terminalsJsonPath = path.join(workspaceFolderPath, "terminals.json");
+
+    const terminalsJson = await fs.promises
+      .readFile(terminalsJsonPath, "utf-8")
+      .then((data) => JSON.parse(data));
+
+    // create terminals
+    for (const [key, terminalConfig] of Object.entries(terminalsJson)) {
+      const parsedTerminalConfig = await terminalConfigSchema.parseAsync(
+        terminalConfig
+      );
+      const terminal = window.createTerminal(parsedTerminalConfig.name);
+      terminal.sendText(parsedTerminalConfig.command);
+      terminal.hide();
+    }
+  };
 }
 
-// This method is called when your extension is deactivated
+export function activate(context: ExtensionContext) {
+  let disposable = commands.registerCommand(
+    "terminals-run.runTerminals",
+    runTerminalsCommand(context)
+  );
+
+  context.subscriptions.push(disposable);
+}
+
 export function deactivate() {}

@@ -1,0 +1,6 @@
+{
+  "backend": {
+    "name": "project:backend",
+    "command": "echo 'Hello World'"
+  }
+}
