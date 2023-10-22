@@ -16,6 +16,10 @@
       {
         "command": "terminals-run.runTerminals",
         "title": "Run Terminals"
+      },
+      {
+        "command": "terminals-run.stopTerminals",
+        "title": "Stop Terminals"
       }
     ]
   },

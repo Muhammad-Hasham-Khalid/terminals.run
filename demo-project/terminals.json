@@ -2,5 +2,9 @@
   "backend": {
     "name": "project:backend",
     "command": "npm run dev"
+  },
+  "test": {
+    "name": "project:test",
+    "command": "echo 'HELLO WORLD'"
   }
 }
